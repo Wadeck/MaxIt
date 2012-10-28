@@ -13,7 +13,7 @@ public class RandomPlayer extends AbstractIAPlayer {
 	private Random ran
 
 	public RandomPlayer() {
-		this.ran = new Random()
+		this.ran = new Random(0)
 	}
 
 	@Override

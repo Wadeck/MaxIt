@@ -45,8 +45,12 @@ public class MinMaxPlayer extends AbstractIAPlayer {
 					}
 				}
 			}
-
-			currIncrValue = currValue - currOtherValue
+			if(maxOtherValue == Integer.MIN_VALUE){
+				currIncrValue = currValue
+			}else{
+				currIncrValue = currValue - maxOtherValue
+			}
+//					currIncrValue = currValue - currOtherValue
 			debug << currIncrValue
 
 			if(currIncrValue > bestIncrValue){
