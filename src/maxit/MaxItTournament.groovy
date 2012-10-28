@@ -28,6 +28,7 @@ public class MaxItTournament {
 		this.stats = players.collectEntries{ Class c ->
 			[(c): new PlayerStats(c)]
 		}
+		log.info "Config for tournament: numFight=${numFight}, withReturn=${withReturn} randomSeeds=${randomSeeds}"
 	}
 	
 	def start(){
