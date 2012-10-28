@@ -80,18 +80,19 @@ public class TournamentLogic {
 		
 		int i = 0
 		while(i < 64){
-			if(i == 61){
-//				def d = 3
+			if(i == 18){
+				def d = 3
 			}
 //			log.debug "turn=${i}"
 			current.getNextMove(tempCoord)
+//			log.debug "${fromHori ? 'nstep' : 'random' } plays (${tempCoord.x}:${tempCoord.y})"
 			error = play(fromHori, tempCoord.x, tempCoord.y)
 			if(error != ErrorType.CORRECT){
 				if(error == ErrorType.END){
 					// end of the game
 					return
 				}else{
-					throw new RuntimeException("Problem during move of player: " + current)
+					throw new RuntimeException("Problem error=${error} i=${i} during move of player: ${current}")
 				}
 			}
 			current.notifyMyMove(tempCoord.x, tempCoord.y)

@@ -16,7 +16,6 @@ class Server {
 
 	private List<Room> runningRooms;
 	private List<Room> waitingRooms;
-	public ServerLogic logic;
 
 	public List<HelloThread> helloThreads;
 	
