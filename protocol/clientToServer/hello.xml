@@ -1,0 +1,7 @@
+
+<message>
+	<type>HelloMessage</type>
+	<content>
+		<myName>#my name</myName>
+	</content>
+</message>

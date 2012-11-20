@@ -1,25 +1,29 @@
 package maxit
 
 import groovy.transform.CompileStatic
+import groovy.transform.TypeCheckingMode
 
 import java.util.Map.Entry
 
 import maxit.commons.core.IArtificialPlayer
 import maxit.commons.logic.server.TournamentLogic
 import maxit.ia.impl.BestStepPlayer
+import maxit.ia.impl.MaxNextPlayer
+import maxit.ia.impl.MinMaxPlayer
 import maxit.ia.impl.NStepPlayer
+import maxit.ia.impl.RandomPlayer
 
 import org.apache.log4j.Logger
 
 /**
- * 
+ * Use to compare a set of IA
  * @author Wadeck
  */
 @CompileStatic
 public class MaxItTournament {
 	private static Logger log = Logger.getLogger(this.class)
-	private static final int numFight = 20
-	private static final boolean randomSeeds = true
+	private static final int numFight = 10
+	private static final boolean randomSeeds = false
 	
 	private static final boolean withReturn = true
 	private static final boolean withDetails = true
@@ -43,12 +47,9 @@ public class MaxItTournament {
 		players.each{ Closure c ->
 			stats << [(c): new PlayerStats(c)]
 		}
-//		this.stats = players.collectEntries{ Closure c ->
-//		[(c): new PlayerStats(c)]
-//		}
 		currentStep = 1
 		totalStep = (int)(numFight * (withReturn ? 2 : 1) * (playerFactories.size() * (playerFactories.size()-1) / 2))
-//		log.info "Config for tournament: numFight=${numFight}, withReturn=${withReturn} randomSeeds=${randomSeeds} withDetails=${withDetails} totalStep=${totalStep}"
+		log.info "Config for tournament: numFight=${numFight}, withReturn=${withReturn} randomSeeds=${randomSeeds} withDetails=${withDetails} totalStep=${totalStep}"
 	}
 	
 	def start(){
@@ -94,20 +95,15 @@ public class MaxItTournament {
 		for (Entry e : stats.entrySet()) {
 			Closure pc = (Closure)(e.key)
 			PlayerStats ps = (PlayerStats)(e.value)
-//			log.info "Stats for pc: ${ pc() }"
+			log.info "Stats for pc: ${ pc() }"
 			
 			for(Entry e2 : ps.scores.entrySet()){
 				def other = (Closure)e2.key
 				def scores = (List)e2.value
 				def numWin = scores.count { Integer item -> item > 0 }
-//				log.info "- vs ${ other() } = ${ numWin } / ${ scores.size() } ${ withDetails ? scores : ''}"
+				log.info "- vs ${ other() } = ${ numWin } / ${ scores.size() } ${ withDetails ? scores : ''}"
 			}
 		}
-		def divide = numFight * (withReturn ? 2 : 1)
-		for (int i = 0; i < evos1.size(); i++) {
-			println "" + evos1[i] / divide + "\t" + evos2[i] / divide +"\t" + (evos1[i]-evos2[i]) / divide
-		}
-//		println '---'
 	}
 	
 	def oneGame(Closure pf1, Closure pf2, int seed){
@@ -137,42 +133,35 @@ public class MaxItTournament {
 			evos1[i] = (int)(evos1[i] ?: 0) + (int)(firstScores[i])
 			evos2[i] = (int)(evos2[i] ?: 0) + (int)(secondScores[i])
 		}
-//		println '----'
-//		log.info 'scoreHs: ' + logic.scoreHs
-//		log.info 'scoreVs: ' + logic.scoreVs
-//		log.info 'diffs: ' + logic.diffs
 	}
 	
 	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis()
 		def participants = [
-//			{ new RandomPlayer() }, 
-//			{ new MaxNextPlayer() }, 
-//			{ new MinMaxPlayer() }, 
-//			{ new NStepPlayer(0) },
-//			{ new NStepPlayer(1) },
-//			{ new NStepPlayer(2) },
-//			{ new NStepPlayer(3) },
-//			{ new NStepPlayer(4) },
-//			{ new NStepPlayer(5) },
-//			{ new NStepPlayer(6) },
-//			{ new NStepPlayer(7) },
-			{ new BestStepPlayer(5, 6) },
-			{ new BestStepPlayer(7, 5) },
-//			{ new BestStepPlayer(9, 3) },
+			{ new RandomPlayer() }, 
+			{ new MaxNextPlayer() }, 
+			{ new MinMaxPlayer() }, 
+			{ new NStepPlayer(3) },
+			{ new NStepPlayer(4) },
+			{ new NStepPlayer(5) },
+			{ new BestStepPlayer(3, 5) },
+			{ new BestStepPlayer(3, 4) },
+			{ new BestStepPlayer(4, 5) },
+			{ new BestStepPlayer(4, 4) },
+			{ new BestStepPlayer(4, 3) },
+			{ new BestStepPlayer(5, 4) },
+			{ new BestStepPlayer(5, 3) },
+			{ new BestStepPlayer(6, 4) },
+			{ new BestStepPlayer(6, 3) },
+			{ new BestStepPlayer(7, 3) },
+			{ new BestStepPlayer(8, 3) },
+			{ new BestStepPlayer(9, 2) },
 		]
-//				def participants = [
-//				                    MaxNextPlayer, 
-////			MinMaxPlayer, 
-////			RandomPlayer, 
-//				                    NStepPlayer,
-//				                    ]
 		new MaxItTournament(participants).start()
 		
 		long endTime = System.currentTimeMillis()
 		
-		println "BestStepPlayer 7.4=${ BestStepPlayer._debugStepDone74 } 9.3=${ BestStepPlayer._debugStepDone93 }"
-//		println("Time taken: ${ (endTime - startTime)*0.001 }s")
+		println("Time taken: ${ (endTime - startTime)*0.001 }s")
 	}
 }
 

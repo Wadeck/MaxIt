@@ -1,0 +1,6 @@
+0: correct
+1: bad row or column (miss click ?) for your move
+2: it's the start cell, you cannot play this one
+3: cell already taken
+4: not your turn
+5: finish

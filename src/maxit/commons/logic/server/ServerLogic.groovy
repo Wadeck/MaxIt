@@ -72,8 +72,8 @@ public class ServerLogic {
 		this.ended = false
 
 		this.listener = listener
-//		this.data = DataFactory.create()
-		this.data = DataFactory.create(0)//TODO random put here
+		this.data = DataFactory.create()
+//		this.data = DataFactory.create(0)//TODO random put here
 		this.horizontal = true
 		this.current = data.getStartY()
 		this.scoreH = scoreV = 0

@@ -1,0 +1,7 @@
+<!-- When a player wants to send a chat message -->
+<message>
+	<type>ChatToServerMessage</type>
+	<content>
+		<content># content of the chat message </content>
+	</content>
+</message>

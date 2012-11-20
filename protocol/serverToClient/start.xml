@@ -1,0 +1,9 @@
+<message>
+	<type>StartMessage</type>
+	<content>
+		<otherName>#name of the other player</otherName>
+		<horizontal>#0 = vertical player, 1 = horizontal player</horizontal>
+		<!-- each data separated by :, each cell row by row -->
+		<data>4:-6:6:-7:0:0:5:9:3:-3:-5:6:-2:7:2:-1:2:7:4:-1:-4:2:-1:-5:-5:-3:0:-3:1:-8:9:1:1:-1:-4:16:-5:-8:-3:-4:-9:2:0:3:-2:-6:0:-7:8:3:15:-2:5:-2:3:6:8:4:-2:1:10:5:-3:4</data>
+	</content>
+</message>

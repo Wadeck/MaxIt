@@ -1,0 +1,8 @@
+<!-- The player that want to play send it to the server -->
+<message>
+	<type>PlayMoveMessage</type>
+	<content>
+		<x>#[0-7] x-position of the selected cell</x>
+		<y>#[0-7] y-position of the selected cell</y>
+	</content>
+</message>

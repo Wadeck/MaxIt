@@ -1,0 +1,8 @@
+<!-- The servers send it to both players, to keep a similar order -->
+<message>
+	<type>ChatToClientMessage</type>
+	<content>
+		<content># content of the message</content>
+		<fromName># player name of the sender, match the otherName or myName</fromName>
+	</content>
+</message>

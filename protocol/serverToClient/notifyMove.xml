@@ -1,0 +1,14 @@
+<!--
+	Both player receive the message when a valid move is done
+	When error is 5, the game is finished and the final scores can be used
+-->
+<message>
+	<type>NotifyMoveMessage</type>
+	<content>
+		<x># x-position of selected cell</x>
+		<y># y-position of selected cell</y>
+		<error># code error cf specific file</error>
+		<scoreH>#score of the horizontal player</scoreH>
+		<scoreV>#score of the vertical player</scoreV>
+	</content>
+</message>

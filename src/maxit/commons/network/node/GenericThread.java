@@ -121,7 +121,8 @@ public class GenericThread<M extends IMessage> extends Thread {
 			buffOutput.write(data);
 			buffOutput.newLine();
 			buffOutput.flush();
-			// log.debug("Data sent: " + data);
+			// TODO remove me
+//			log.debug("Data sent: " + data);
 		} catch (IOException e) {
 			log.error("output message", e);
 		}
@@ -164,6 +165,7 @@ public class GenericThread<M extends IMessage> extends Thread {
 
 			M message;
 			try {
+//				log.debug("received: " + xml);
 				message = messageReader.readMessage(xml);
 				if (message != null) {
 					listener.onMessage(message);

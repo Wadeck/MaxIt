@@ -15,9 +15,6 @@ import sun.org.mozilla.javascript.internal.ast.ForInLoop;
  */
 @CompileStatic
 public class BestStepPlayer extends AbstractIAPlayer {
-	public static int _debugStepDone93 = 0
-	public static int _debugStepDone74 = 0
-	
 	private static Logger log = Logger.getLogger(this.class)
 	
 	private static final boolean DEBUG = false
@@ -176,11 +173,6 @@ public class BestStepPlayer extends AbstractIAPlayer {
 	 */
 	private short findMin(int col){
 		if(computedValues.size() > nStep){
-			if(nStep == 7){
-				_debugStepDone74++
-			}else{
-				_debugStepDone93++
-			}	
 			return difference
 		}
 		def debug = new int[8]
@@ -235,11 +227,6 @@ public class BestStepPlayer extends AbstractIAPlayer {
 	 */
 	private short findMax(int row){
 		if(computedValues.size() > nStep){
-			if(nStep == 7){
-				_debugStepDone74++
-			}else{
-				_debugStepDone93++
-			}	
 			return difference
 		}
 		def debug = new int[8]
@@ -382,6 +369,6 @@ public class BestStepPlayer extends AbstractIAPlayer {
 	
 	@Override
 	String toString(){
-		return this.class.simpleName + "@" + nStep
+		return this.class.simpleName + "@${ nStep }-${ numChoices }"
 	}
 }
