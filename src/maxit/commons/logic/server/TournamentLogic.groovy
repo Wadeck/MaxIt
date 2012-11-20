@@ -25,7 +25,8 @@ public class TournamentLogic {
 	private boolean horizontal
 
 	private int scoreH, scoreV
-
+	private List scoreHs, scoreVs, diffs
+	
 	private IArtificialPlayer hPlayer
 	private IArtificialPlayer vPlayer
 
@@ -72,6 +73,10 @@ public class TournamentLogic {
 	public void start() {
 		hPlayer.initData(data.getArray(), true)
 		vPlayer.initData(data.getArray(), false)
+		
+		this.scoreHs = []
+		this.scoreVs = []
+		this.diffs = []
 
 		IArtificialPlayer current = hPlayer
 		boolean fromHori = true
@@ -90,6 +95,11 @@ public class TournamentLogic {
 			if(error != ErrorType.CORRECT){
 				if(error == ErrorType.END){
 					// end of the game
+//					if(fromHori){
+						scoreHs << scoreH
+						scoreVs << scoreV
+						diffs << scoreH - scoreV
+//					}
 					return
 				}else{
 					throw new RuntimeException("Problem error=${error} i=${i} during move of player: ${current}")
@@ -101,6 +111,11 @@ public class TournamentLogic {
 			
 			fromHori = !fromHori
 			
+			if(fromHori){
+				scoreHs << scoreH
+				scoreVs << scoreV
+				diffs << scoreH - scoreV
+			}
 			
 			i++
 		}

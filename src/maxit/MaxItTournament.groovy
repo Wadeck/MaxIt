@@ -1,11 +1,12 @@
 package maxit
 
 import groovy.transform.CompileStatic
-import groovy.transform.TypeCheckingMode
+
+import java.util.Map.Entry
+
 import maxit.commons.core.IArtificialPlayer
 import maxit.commons.logic.server.TournamentLogic
-import maxit.ia.impl.MaxNextPlayer
-import maxit.ia.impl.MinMaxPlayer
+import maxit.ia.impl.BestStepPlayer
 import maxit.ia.impl.NStepPlayer
 
 import org.apache.log4j.Logger
@@ -14,29 +15,40 @@ import org.apache.log4j.Logger
  * 
  * @author Wadeck
  */
-//@CompileStatic
+@CompileStatic
 public class MaxItTournament {
 	private static Logger log = Logger.getLogger(this.class)
-	private static numFight = 1
-	private static withReturn = true
-	private static randomSeeds = false
-	private static withDetails = true
+	private static final int numFight = 20
+	private static final boolean randomSeeds = true
+	
+	private static final boolean withReturn = true
+	private static final boolean withDetails = true
 	
 	// to show progression
-	private long timeToAdd = 1000 * 10
+	private static final long timeToAdd = 1000 * 10
 	private long nextTime = System.currentTimeMillis() + timeToAdd // 10 seconds
 	private int currentStep, totalStep
 	
-	private Map<Class, PlayerStats> stats
-	private List<Class<IArtificialPlayer>> playerFactories
-	MaxItTournament(List<Class<IArtificialPlayer>> players){
+//	private Map<Closure, PlayerStats> stats
+	private Map stats
+	private List<Closure> playerFactories
+	
+	private List<Integer> evos1 = []
+	private List<Integer> evos2 = []
+	private def firstP
+	
+	MaxItTournament(List<Closure> players){
 		this.playerFactories = players
-		this.stats = players.collectEntries{ Closure c ->
-			[(c): new PlayerStats(c)]
+		this.stats = [:]
+		players.each{ Closure c ->
+			stats << [(c): new PlayerStats(c)]
 		}
+//		this.stats = players.collectEntries{ Closure c ->
+//		[(c): new PlayerStats(c)]
+//		}
 		currentStep = 1
-		totalStep = numFight * (withReturn ? 2 : 1) * (playerFactories.size() * (playerFactories.size()-1) / 2)
-		log.info "Config for tournament: numFight=${numFight}, withReturn=${withReturn} randomSeeds=${randomSeeds} withDetails=${withDetails} totalStep=${totalStep}"
+		totalStep = (int)(numFight * (withReturn ? 2 : 1) * (playerFactories.size() * (playerFactories.size()-1) / 2))
+//		log.info "Config for tournament: numFight=${numFight}, withReturn=${withReturn} randomSeeds=${randomSeeds} withDetails=${withDetails} totalStep=${totalStep}"
 	}
 	
 	def start(){
@@ -56,6 +68,7 @@ public class MaxItTournament {
 	}
 	
 	def startRound(Closure pf1, Closure pf2){
+		this.firstP = pf1
 		int seed
 		for (int n = 0; n < numFight; n++) {
 			if(randomSeeds){
@@ -76,52 +89,77 @@ public class MaxItTournament {
 		}
 	}
 	
-	@CompileStatic(TypeCheckingMode.SKIP)
+//	@CompileStatic(TypeCheckingMode.SKIP)
 	def displayResult(){
-		stats.entrySet().each{ e ->
-//		stats.each { e ->
-			Closure pc = e.key
-			PlayerStats ps = e.value
-			log.info "Stats for pc: ${ ps.p() }"
-			ps.scores.each{ Closure other, List scores ->
-				log.info "- vs ${ other() } = ${ scores.count{ it > 0 } } / ${ scores.size() } ${ withDetails ? scores : ''}"
+		for (Entry e : stats.entrySet()) {
+			Closure pc = (Closure)(e.key)
+			PlayerStats ps = (PlayerStats)(e.value)
+//			log.info "Stats for pc: ${ pc() }"
+			
+			for(Entry e2 : ps.scores.entrySet()){
+				def other = (Closure)e2.key
+				def scores = (List)e2.value
+				def numWin = scores.count { Integer item -> item > 0 }
+//				log.info "- vs ${ other() } = ${ numWin } / ${ scores.size() } ${ withDetails ? scores : ''}"
 			}
 		}
+		def divide = numFight * (withReturn ? 2 : 1)
+		for (int i = 0; i < evos1.size(); i++) {
+			println "" + evos1[i] / divide + "\t" + evos2[i] / divide +"\t" + (evos1[i]-evos2[i]) / divide
+		}
+//		println '---'
 	}
 	
 	def oneGame(Closure pf1, Closure pf2, int seed){
 		if(nextTime < System.currentTimeMillis()){
-			nextTime += timeToAdd // 10 seconds
+			nextTime += this.timeToAdd // 10 seconds
 			log.info "total step: ${ currentStep } / ${ totalStep }"
 		}
 		currentStep++
-		IArtificialPlayer p1 = pf1()
-		IArtificialPlayer p2 = pf2()
+		IArtificialPlayer p1 = (IArtificialPlayer)pf1()
+		IArtificialPlayer p2 = (IArtificialPlayer)pf2()
 		TournamentLogic logic = new TournamentLogic(p1, p2, seed)
 		logic.start()
 		
-		stats[pf1].addStatVs(pf2, logic.getScoreH(), logic.getScoreV())
-		stats[pf2].addStatVs(pf1, logic.getScoreV(), logic.getScoreH())
+		((PlayerStats)stats[pf1]).addStatVs(pf2, logic.getScoreH(), logic.getScoreV())
+		((PlayerStats)stats[pf2]).addStatVs(pf1, logic.getScoreV(), logic.getScoreH())
+		
+	
+		List<Integer> firstScores, secondScores
+		if(firstP == pf1){
+			firstScores = logic.scoreHs
+			secondScores = logic.scoreVs
+		}else{
+			firstScores = logic.scoreVs
+			secondScores = logic.scoreHs
+		}
+		for (int i = 0; i < firstScores.size(); i++) {
+			evos1[i] = (int)(evos1[i] ?: 0) + (int)(firstScores[i])
+			evos2[i] = (int)(evos2[i] ?: 0) + (int)(secondScores[i])
+		}
+//		println '----'
+//		log.info 'scoreHs: ' + logic.scoreHs
+//		log.info 'scoreVs: ' + logic.scoreVs
+//		log.info 'diffs: ' + logic.diffs
 	}
-//	def oneGame(IArtificialPlayer p1, IArtificialPlayer p2, int seed){
-//		TournamentLogic logic = new TournamentLogic(p1, p2, seed)
-//		logic.start()
-//		log.info "Game[seed=${ seed }, p1:${ p1 }=${ logic.getScoreH() }, p2:${ p2 }=${ logic.getScoreV() }, diff=${ Math.abs(logic.getScoreH() - logic.getScoreV()) }]"
-//	}
 	
 	public static void main(String[] args) {
+		long startTime = System.currentTimeMillis()
 		def participants = [
 //			{ new RandomPlayer() }, 
 //			{ new MaxNextPlayer() }, 
 //			{ new MinMaxPlayer() }, 
 //			{ new NStepPlayer(0) },
 //			{ new NStepPlayer(1) },
-			{ new NStepPlayer(2) },
-			{ new NStepPlayer(3) },
-			{ new NStepPlayer(4) },
-			{ new NStepPlayer(5) },
-			{ new NStepPlayer(6) },
-			{ new NStepPlayer(7) },
+//			{ new NStepPlayer(2) },
+//			{ new NStepPlayer(3) },
+//			{ new NStepPlayer(4) },
+//			{ new NStepPlayer(5) },
+//			{ new NStepPlayer(6) },
+//			{ new NStepPlayer(7) },
+			{ new BestStepPlayer(5, 6) },
+			{ new BestStepPlayer(7, 5) },
+//			{ new BestStepPlayer(9, 3) },
 		]
 //				def participants = [
 //				                    MaxNextPlayer, 
@@ -130,11 +168,16 @@ public class MaxItTournament {
 //				                    NStepPlayer,
 //				                    ]
 		new MaxItTournament(participants).start()
+		
+		long endTime = System.currentTimeMillis()
+		
+		println "BestStepPlayer 7.4=${ BestStepPlayer._debugStepDone74 } 9.3=${ BestStepPlayer._debugStepDone93 }"
+//		println("Time taken: ${ (endTime - startTime)*0.001 }s")
 	}
 }
 
 class PlayerStats{
-	private Closure p
+	public Closure p
 	Map<Closure, List<Integer>> scores
 	def PlayerStats(Closure p){
 		this.p = p

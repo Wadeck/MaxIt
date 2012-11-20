@@ -14,22 +14,26 @@ import sun.org.mozilla.javascript.internal.ast.ForInLoop;
  *
  */
 @CompileStatic
-public class NStepPlayer extends AbstractIAPlayer {
+public class BestStepPlayer extends AbstractIAPlayer {
+	public static int _debugStepDone93 = 0
+	public static int _debugStepDone74 = 0
+	
 	private static Logger log = Logger.getLogger(this.class)
 	
 	private static final boolean DEBUG = false
 	/** Number of turn in advance */
 	private int nStep
+	private int numChoices
 
 	// n = 0 => maxNext
 	// n = 1 => minMax	
-	def NStepPlayer(int n = 3){
-//		log.debug "${ n } steps construtor"
+	def BestStepPlayer(int n = 7, int c = 4){
 		this.nStep = n 
+		this.numChoices = c
 	}
 	
-	def NStepPlayer(String n){
-		this.nStep = n.toInteger()
+	def BestStepPlayer(String n, String c){
+		this(n.toInteger(), c.toInteger())
 	}
 	
 	/** Current state of which cells are taken */
@@ -39,28 +43,10 @@ public class NStepPlayer extends AbstractIAPlayer {
 	/** Values of each columns/rows cells during the search */
 	private List<short[]> computedValues
 	
-//	private int turn = 0
+	private int currentStep
 	
 	@Override
 	public void getNextMove(Coord coord) {
-//		turn++
-//		if(turn < 15){
-//			def ran = new Random()
-//			// first turns, just play randomly
-//			int[] possibleMove = new int[8]
-//			int numMove = 0
-//	
-//			// here the real computation
-//			for (int i = 0; i < 8; i++) {
-//				if (data.getDataAt(i, lastOther) <= 15) {
-//					possibleMove[numMove] = i
-//					numMove++
-//				}
-//			}
-//			nextMove(coord, possibleMove[ran.nextInt(numMove)])
-//			return
-//		}
-		
 		if(DEBUG){
 			log.debug "starting computation... with current state:\n${ this.data.toString() }"
 		}
@@ -91,6 +77,49 @@ public class NStepPlayer extends AbstractIAPlayer {
 		this.difference = 0
 	}
 	
+	private int computeMinValueToBeChosen(int rowCol, boolean isHori){
+		// determine which cells we want to follow
+		// the total number of possible cell
+		int totalChoices = 0;
+		// the number we want to use
+		int numOfChoices = 0;
+		// the minimum value to have to be followed
+		// in order to solve the situation where 2 cells are equals
+		int minToBeChosen = Integer.MIN_VALUE;
+		
+		def allValues = new int[8]
+		
+		// first step, we compute which cells can be chosen for the second step
+		if(isHori){
+			// each column
+			for(int i = 0; i < 8 ; i++){
+				if(isAlreadyUsed(i, rowCol)){
+					allValues[i] = Integer.MIN_VALUE
+				}else{
+					allValues[i] = data.getDataAt(i, rowCol)
+					totalChoices++
+				}
+			}
+		}else{
+			// each row
+			for(int j = 0; j < 8 ; j++){
+				if(isAlreadyUsed(rowCol, j)){
+					allValues[j] = Integer.MIN_VALUE
+				}else{
+					allValues[j] = data.getDataAt(rowCol, j)
+					totalChoices++
+				}
+			}
+		}
+		
+		numOfChoices = getNumOfChoice(totalChoices)
+		// find the minimum value to have to be chosen
+		Arrays.sort(allValues)
+		minToBeChosen = allValues[allValues.length - numOfChoices]
+		
+		return minToBeChosen
+	}
+	
 	/**
 	 * The first method is not findMax because we want to find the index
 	 * and not the real value of the best row
@@ -98,14 +127,19 @@ public class NStepPlayer extends AbstractIAPlayer {
 	 * @return index
 	 */
 	private int findBestChoice(int row){
+		this.currentStep = 0
 		def debug = new int[8]
 		def curr = new short[8]
 		computedValues.push(curr)
 		
+		def minToBeChosen = computeMinValueToBeChosen(row, true)
+		
+		def currValue
 		for(int i = 0; i < 8 ; i++){
-			debug[i] = data.getDataAt(i, row)
+			currValue = data.getDataAt(i, row)
+			debug[i] = currValue
 			// loop on the row cells and use only the cells that were not already used
-			if(isAlreadyUsed(i, row)){
+			if(isAlreadyUsed(i, row) || currValue < minToBeChosen){
 				// we search max
 				curr[i] = Short.MIN_VALUE
 			}else{
@@ -142,16 +176,26 @@ public class NStepPlayer extends AbstractIAPlayer {
 	 */
 	private short findMin(int col){
 		if(computedValues.size() > nStep){
+			if(nStep == 7){
+				_debugStepDone74++
+			}else{
+				_debugStepDone93++
+			}	
 			return difference
 		}
 		def debug = new int[8]
 		// store the values of each column
 		def curr = new short[8]
 		computedValues.push(curr)
+		
+		def minToBeChosen = computeMinValueToBeChosen(col, false)
+		
+		def currValue
 		for(int i = 0; i < 8 ; i++){
-			debug[i] = data.getDataAt(col, i)
+			currValue = data.getDataAt(col, i)
+			debug[i] = currValue
 			// loop on the row cells and use only the cells that were not already used
-			if(isAlreadyUsed(col, i)){
+			if(isAlreadyUsed(col, i) || currValue < minToBeChosen){
 				// we search max
 				curr[i] = Short.MAX_VALUE
 			}else{
@@ -191,16 +235,26 @@ public class NStepPlayer extends AbstractIAPlayer {
 	 */
 	private short findMax(int row){
 		if(computedValues.size() > nStep){
+			if(nStep == 7){
+				_debugStepDone74++
+			}else{
+				_debugStepDone93++
+			}	
 			return difference
 		}
 		def debug = new int[8]
 		// store the values of each column
 		def curr = new short[8]
 		computedValues.push(curr)
+		
+		def minToBeChosen = computeMinValueToBeChosen(row, true)
+		
+		def currValue
 		for(int i = 0; i < 8 ; i++){
-			debug[i] = data.getDataAt(i, row)
+			currValue = data.getDataAt(i, row)
+			debug[i] = currValue
 			// loop on the row cells and use only the cells that were not already used
-			if(isAlreadyUsed(i, row)){
+			if(isAlreadyUsed(i, row) || currValue < minToBeChosen){
 				// we search max
 				curr[i] = Short.MIN_VALUE
 			}else{
@@ -210,9 +264,6 @@ public class NStepPlayer extends AbstractIAPlayer {
 				curr[i] = findMin(i)
 				releaseCell(i, row, true)
 			}
-			
-//			if(Math.random() > 0.99999){
-//			}
 		}
 		if(DEBUG){
 			log.debug "max=>${debug} diff=${difference}\n${ debugStep() }"
@@ -234,6 +285,65 @@ public class NStepPlayer extends AbstractIAPlayer {
 			return difference
 		}
 		return max
+	}
+	
+	/**
+	 * Determine if the cell is already used
+	 */
+	private boolean isAlreadyUsed(int x, int y){
+		return taken[x][y]
+	}
+	
+	/**
+	 * Add the value, put a marker on the cell
+	 */
+	private useCell(int x, int y, boolean isHori){
+		taken[x][y] = true
+		if(isHori){
+			this.difference += data.getDataAt(x, y)
+		}else{
+			this.difference -= data.getDataAt(x, y)
+		}
+	}
+	
+	/**
+	 * Subtract the value and remove the market from the cell
+	 */
+	private releaseCell(int x, int y, boolean isHori){
+		taken[x][y] = false
+		if(isHori){
+			this.difference -= data.getDataAt(x, y)
+		}else{
+			this.difference += data.getDataAt(x, y)
+		}
+	}
+	
+	/**
+	 * Compute the number of choice we want to investigate
+	 * @param total
+	 */
+	private int getNumOfChoice(int total){
+//		return Math.max(3, (int)(total * 0.5))
+		return 3
+	}
+	
+	private debugState(){
+		StringBuilder buffer = new StringBuilder()
+		String value
+		boolean curr
+		for (int j = 0; j < 8; j++) {
+			for (int i = 0; i < 8; i++) {
+				curr = taken[i][j]
+				if (curr) {
+					value = "#"
+				} else {
+					value = "."
+				}
+				buffer.append(value + "\t")
+			}
+			buffer.append("\n")
+		}
+		return buffer.toString()
 	}
 	
 	/**
@@ -269,106 +379,6 @@ public class NStepPlayer extends AbstractIAPlayer {
 		}
 		return sb.toString()
 	}
-	
-	/**
-	 * Determine if the cell is already used
-	 */
-	private boolean isAlreadyUsed(int x, int y){
-		return taken[x][y]
-	}
-	
-	/**
-	 * Add the value, put a marker on the cell
-	 */
-	private useCell(int x, int y, boolean isHori){
-		taken[x][y] = true
-		if(isHori){
-			this.difference += data.getDataAt(x, y)
-		}else{
-			this.difference -= data.getDataAt(x, y)
-		}
-	}
-	
-	/**
-	 * Subtract the value and remove the market from the cell
-	 */
-	private releaseCell(int x, int y, boolean isHori){
-		taken[x][y] = false
-		if(isHori){
-			this.difference -= data.getDataAt(x, y)
-		}else{
-			this.difference += data.getDataAt(x, y)
-		}
-	}
-	
-	private debugState(){
-		StringBuilder buffer = new StringBuilder()
-		String value
-		boolean curr
-		for (int j = 0; j < 8; j++) {
-			for (int i = 0; i < 8; i++) {
-				curr = taken[i][j]
-				if (curr) {
-					value = "#"
-				} else {
-					value = "."
-				}
-				buffer.append(value + "\t")
-			}
-			buffer.append("\n")
-		}
-		return buffer.toString()
-	}
-//	@Override
-//	public void getNextMove(Coord coord) {
-//		
-//		def debug = []
-//				
-//				// here the real computation
-//				int bestIncrValue = Integer.MIN_VALUE
-//				int bestIncrIndex = -1
-//				// current value for the player if taking this index
-//				int currValue
-//				
-//				int maxOtherValue 
-//				// next value the other player can take with the given index
-//				int currOtherValue
-//				
-//				// with this i and the max value the other can take, we have such a difference
-//				int currIncrValue
-//				for (int i = 0; i < 8; i++) {
-//					maxOtherValue = Integer.MIN_VALUE
-//							currValue = data.getDataAt(i, lastOther)
-//							if(currValue > 15){
-//								continue
-//							}
-//					
-//					for (int j = 0; j < 8; j++) {
-//						if(j == lastOther){
-//							// the one we take in this case
-//							continue
-//						}
-//						currOtherValue = data.getDataAt(i, j)
-//								if(currOtherValue <= 15){
-//									if(currOtherValue > maxOtherValue){
-//										maxOtherValue = currOtherValue
-//									}
-//								}
-//					}
-//					
-//					currIncrValue = currValue - currOtherValue
-//							debug << currIncrValue
-//							
-//							if(currIncrValue > bestIncrValue){
-//								bestIncrIndex = i
-//										bestIncrValue = currIncrValue
-//							}
-//				}
-//		
-//		log.debug "values: "+debug +", selected: "+bestIncrValue
-//		
-//		nextMove(coord, bestIncrIndex)
-//	}
 	
 	@Override
 	String toString(){
